@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"io"
@@ -108,11 +108,6 @@ func (c *command) Handle(input CommandInput, writer io.Writer) Error {
 
 func (c *command) Parse(input []string) (CommandInput, Error) {
 	inputLength := len(input)
-
-	if inputLength == 0 {
-		return nil, &InvalidCommandUsageError{command: c.Name}
-	}
-
 	inputArgs := make(map[commandArgument]any)
 	inputOpts := make(map[commandOption]any)
 
@@ -175,7 +170,7 @@ func NewCommander() Commander {
 }
 
 func (c *commander) AddCommand(commandName string, command Command) Commander {
-	c.commands[commandName] = command
+	c.commands[strings.ToLower(commandName)] = command
 	return c
 }
 
@@ -201,8 +196,8 @@ func (c *commander) Write(output string) Error {
 }
 
 func (c *commander) Run(input string) Error {
-	in := strings.Split(strings.TrimSpace(strings.TrimSuffix(input, "\n")), " ")
-	commandName := strings.ToUpper(in[0])
+	in := strings.Split(strings.TrimSpace(input), " ")
+	commandName := strings.ToLower(in[0])
 	command, err := c.Get(commandName)
 	if err != nil {
 		return err
