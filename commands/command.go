@@ -157,7 +157,7 @@ type Commander interface {
 	AddCommand(string, Command) Commander
 	SetWriter(io.Writer) Commander
 	Write(string) Error
-	Run(string) Error
+	Run([]string) Error
 }
 
 type commander struct {
@@ -195,8 +195,7 @@ func (c *commander) Write(output string) Error {
 	return nil
 }
 
-func (c *commander) Run(input string) Error {
-	in := strings.Split(strings.TrimSpace(input), " ")
+func (c *commander) Run(in []string) Error {
 	commandName := strings.ToLower(in[0])
 	command, err := c.Get(commandName)
 	if err != nil {
