@@ -10,10 +10,14 @@ import (
 	commands "github.com/yassirdeveloper/cli/commands"
 )
 
+const HistoryLimit = 100
+const AppName = "cli"
+
 func main() {
 	commander := commands.NewCommander()
 	commander.AddCommand("help", commands.HelpCommand)
 	commander.AddCommand("exit", commands.ExitCommand)
+	commander.AddCommand("version", commands.VersionCommand)
 	commander.SetWriter(os.Stdout)
 
 	args := os.Args
@@ -23,15 +27,16 @@ func main() {
 			commander.Write(err.Display())
 			os.Exit(1)
 		}
+		commander.Write("\n")
 		os.Exit(0)
 	}
 
-	line, err_ := readline.New("> ")
+	line, err_ := readline.New(AppName + "> ")
 	if err_ != nil {
 		log.Fatalf("Error initializing readline: %v", err_)
 	}
 	defer line.Close()
-	line.Config.HistoryLimit = 100
+	line.Config.HistoryLimit = HistoryLimit
 
 	for {
 		input, err_ := line.Readline()
@@ -40,12 +45,10 @@ func main() {
 			break
 		}
 		line.SaveHistory(input)
-
 		err := commander.Run(strings.Split(strings.TrimSpace(strings.TrimSuffix(input, "\n")), " "))
 		if err != nil {
 			commander.Write(err.Display())
 		}
 		commander.Write("\n")
-
 	}
 }
