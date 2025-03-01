@@ -10,4 +10,7 @@ func exitHandler(_ CommandInput, _ io.Writer) Error {
 	return nil
 }
 
-var ExitCommand = NewCommand("exit").SetHandler(exitHandler)
+func ExitCommand() Command {
+	command := &command{handler: exitHandler}
+	return command
+}

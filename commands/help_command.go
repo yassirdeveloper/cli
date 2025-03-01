@@ -12,4 +12,7 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 	return nil
 }
 
-var HelpCommand = NewCommand("help").SetHandler(helpHandler)
+func HelpCommand() Command {
+	command := &command{handler: helpHandler}
+	return command
+}

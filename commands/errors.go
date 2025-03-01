@@ -33,16 +33,17 @@ func (e *InvalidCommandUsageError) Display() string {
 	return fmt.Sprintf("Invalid usage of command: %s", e.command)
 }
 
-type CommandNotExecutableError struct {
+type UnreconizedFlagError struct {
 	command string
+	flag    string
 }
 
-func (e *CommandNotExecutableError) Error() string {
-	return fmt.Sprintf("Command not executable: %s", e.command)
+func (e *UnreconizedFlagError) Error() string {
+	return fmt.Sprintf("Unreconized flag %s for command %s", e.flag, e.command)
 }
 
-func (e *CommandNotExecutableError) Display() string {
-	return fmt.Sprintf("Command not executable: %s", e.command)
+func (e *UnreconizedFlagError) Display() string {
+	return fmt.Sprintf("Unreconized flag %s for command %s", e.flag, e.command)
 }
 
 type CommandError struct {
@@ -67,7 +68,7 @@ func (e *UnexpectedError) Error() string {
 }
 
 func (e *UnexpectedError) Display() string {
-	return "Something went wrong!"
+	return "An unexpected error occured!"
 }
 
 type SetupError struct {
@@ -79,5 +80,5 @@ func (e *SetupError) Error() string {
 }
 
 func (e *SetupError) Display() string {
-	return e.message
+	return "An error occured during steup:" + e.message
 }

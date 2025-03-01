@@ -6,7 +6,7 @@ import (
 
 const version = "0.0.0"
 
-func versionHandler(input CommandInput, writer io.Writer) Error {
+func versionHandler(_ CommandInput, writer io.Writer) Error {
 	_, err := writer.Write([]byte("v" + version))
 	if err != nil {
 		return &UnexpectedError{}
@@ -14,4 +14,7 @@ func versionHandler(input CommandInput, writer io.Writer) Error {
 	return nil
 }
 
-var VersionCommand = NewCommand("version").SetHandler(versionHandler)
+func VersionCommand() Command {
+	command := &command{handler: versionHandler}
+	return command
+}

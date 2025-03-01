@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+const OptionLetterPrefix = "-"
+const OptionNamePrefix = "--"
+
 type ValueType int
 
 type Stringer interface {
@@ -64,9 +67,10 @@ func (c *commandInput) ParseOption(opt commandOption) (any, Error) {
 type CommandHanlder func(CommandInput, io.Writer) Error
 
 type Command interface {
-	AddArgument(commandArgument) Command
-	AddOption(commandOption) Command
-	SetHandler(CommandHanlder) Command
+	setName(string) Command
+	addArgument(commandArgument) Command
+	addOption(commandOption) Command
+	setHandler(CommandHanlder) Command
 	Handle(CommandInput, io.Writer) Error
 	Parse([]string) (CommandInput, Error)
 	String() string
@@ -79,25 +83,26 @@ type command struct {
 	handler   CommandHanlder
 }
 
-func NewCommand(name string) Command {
-	return &command{Name: name}
-}
-
 func (c *command) String() string {
 	return c.Name
 }
 
-func (c *command) AddArgument(arg commandArgument) Command {
+func (c *command) setName(name string) Command {
+	c.Name = name
+	return c
+}
+
+func (c *command) addArgument(arg commandArgument) Command {
 	c.Arguments = append(c.Arguments, arg)
 	return c
 }
 
-func (c *command) AddOption(opt commandOption) Command {
+func (c *command) addOption(opt commandOption) Command {
 	c.Options = append(c.Options, opt)
 	return c
 }
 
-func (c *command) SetHandler(commandHandler CommandHanlder) Command {
+func (c *command) setHandler(commandHandler CommandHanlder) Command {
 	c.handler = commandHandler
 	return c
 }
@@ -122,17 +127,19 @@ func (c *command) Parse(input []string) (CommandInput, Error) {
 			return nil, &InvalidCommandUsageError{command: c.Name}
 		}
 		inputArgs[arg] = value
+		input = slices.Delete(input, arg.position, arg.position)
 	}
 
 	// Parse options
 	for _, opt := range c.Options {
-		index := slices.Index(input, string(opt.letter))
+		index := slices.Index(input, OptionLetterPrefix+string(opt.letter))
 		if index == -1 {
-			index = slices.Index(input, opt.name)
+			index = slices.Index(input, OptionNamePrefix+opt.name)
 		}
 		if index != -1 {
 			if opt.valueType == NoType {
 				inputOpts[opt] = true
+				input = slices.Delete(input, index, index)
 			} else {
 				if index+1 >= inputLength {
 					return nil, &InvalidCommandUsageError{command: c.Name}
@@ -142,6 +149,7 @@ func (c *command) Parse(input []string) (CommandInput, Error) {
 					return nil, &InvalidCommandUsageError{command: c.Name}
 				}
 				inputOpts[opt] = value
+				input = slices.Delete(input, index, index+1)
 			}
 		}
 	}
@@ -170,6 +178,7 @@ func NewCommander() Commander {
 }
 
 func (c *commander) AddCommand(commandName string, command Command) Commander {
+	command.setName(commandName)
 	c.commands[strings.ToLower(commandName)] = command
 	return c
 }
@@ -201,9 +210,16 @@ func (c *commander) Run(in []string) Error {
 	if err != nil {
 		return err
 	}
-	inputCommand, err := command.Parse(in[1:])
+	input := in[1:]
+	inputCommand, err := command.Parse(input)
 	if err != nil {
 		return err
+	}
+	if len(input) > 0 {
+		if strings.HasPrefix(input[0], OptionLetterPrefix) || strings.HasPrefix(input[0], OptionNamePrefix) {
+			return &UnreconizedFlagError{command: commandName, flag: input[0]}
+		}
+		return &InvalidCommandUsageError{command: commandName}
 	}
 	return command.Handle(inputCommand, c.writer)
 }

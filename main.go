@@ -15,9 +15,9 @@ const AppName = "cli"
 
 func main() {
 	commander := commands.NewCommander()
-	commander.AddCommand("help", commands.HelpCommand)
-	commander.AddCommand("exit", commands.ExitCommand)
-	commander.AddCommand("version", commands.VersionCommand)
+	commander.AddCommand("help", commands.HelpCommand())
+	commander.AddCommand("exit", commands.ExitCommand())
+	commander.AddCommand("version", commands.VersionCommand())
 	commander.SetWriter(os.Stdout)
 
 	args := os.Args
