@@ -22,15 +22,16 @@ func (e *InvalidCommandError) Display() string {
 }
 
 type InvalidCommandUsageError struct {
-	command string
+	command Command
 }
 
 func (e *InvalidCommandUsageError) Error() string {
-	return fmt.Sprintf("Invalid usage of command: %s", e.command)
+	return fmt.Sprintf("Invalid usage of command: %s", e.command.String())
 }
 
 func (e *InvalidCommandUsageError) Display() string {
-	return fmt.Sprintf("Invalid usage of command: %s", e.command)
+	commandName := e.command.String()
+	return fmt.Sprintf("Invalid usage of command: %s\n\n> %s: %s\n", commandName, commandName, e.command.Help())
 }
 
 type UnreconizedFlagError struct {

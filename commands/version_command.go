@@ -4,17 +4,24 @@ import (
 	"io"
 )
 
-const version = "0.0.0"
+const Version = "0.0.0"
+
+func getVersionString() string {
+	return "v" + Version
+}
 
 func versionHandler(_ CommandInput, writer io.Writer) Error {
-	_, err := writer.Write([]byte("v" + version))
+	_, err := writer.Write([]byte(getVersionString()))
 	if err != nil {
-		return &UnexpectedError{}
+		return &UnexpectedError{err: err}
 	}
 	return nil
 }
 
 func VersionCommand() Command {
-	command := &command{handler: versionHandler}
+	command := &command{
+		helpText: "Display the current version.",
+	}
+	command.setHandler(versionHandler)
 	return command
 }

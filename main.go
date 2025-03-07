@@ -14,10 +14,10 @@ const HistoryLimit = 100
 const AppName = "cli"
 
 func main() {
-	commander := commands.NewCommander()
-	commander.AddCommand("help", commands.HelpCommand())
+	commander := commands.GetCommander()
 	commander.AddCommand("exit", commands.ExitCommand())
 	commander.AddCommand("version", commands.VersionCommand())
+	commander.AddCommand("help", commands.HelpCommand())
 	commander.SetWriter(os.Stdout)
 
 	args := os.Args
