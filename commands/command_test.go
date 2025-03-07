@@ -158,8 +158,8 @@ func TestCommander(t *testing.T) {
 		commander.AddCommand("test", command)
 
 		retrievedCommand, exists := commander.Get("test")
-		if exists {
-			t.Fatalf("Expected not retrieving command, but got: one")
+		if !exists {
+			t.Fatalf("Expected retrieving command, but got none")
 		}
 		if retrievedCommand.String() != "test" {
 			t.Errorf("Expected command name 'test', but got '%s'", retrievedCommand.String())
@@ -168,8 +168,8 @@ func TestCommander(t *testing.T) {
 
 	t.Run("Get Nonexistent Command", func(t *testing.T) {
 		_, exists := commander.Get("nonexistent")
-		if !exists {
-			t.Fatal("Expected to not get a command for nonexistent command, but got none")
+		if exists {
+			t.Fatal("Expected to not get a command for nonexistent command, but got one")
 		}
 	})
 
