@@ -11,7 +11,7 @@ import (
 )
 
 const HistoryLimit = 100
-const AppName = "cli"
+var AppName = "cli"
 
 func main() {
 	commander := commands.GetCommander()
