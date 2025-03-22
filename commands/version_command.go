@@ -4,7 +4,7 @@ import (
 	"io"
 )
 
-const Version = "0.0.0"
+var Version = "0.0.0"
 
 func getVersionString() string {
 	return "v" + Version

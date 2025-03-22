@@ -70,9 +70,10 @@ type CommandHanlder func(CommandInput, io.Writer) Error
 
 type Command interface {
 	setName(string) Command
-	addArgument(commandArgument) (Command, Error)
-	addOption(commandOption) (Command, Error)
+	AddArgument(commandArgument) (Command, Error)
+	AddOption(commandOption) (Command, Error)
 	setHandler(CommandHanlder) Command
+	Validate() Error
 	Handle(CommandInput, io.Writer) Error
 	Parse([]string) (CommandInput, Error)
 	String() string
@@ -85,6 +86,15 @@ type command struct {
 	Options   []commandOption
 	handler   CommandHanlder
 	helpText  string
+}
+
+func NewCommand(name string, helpText string, handler CommandHanlder) Command {
+	command := &command{
+		Name:     name,
+		helpText: helpText,
+	}
+	command.setHandler(handler)
+	return command
 }
 
 func (c *command) String() string {
@@ -107,7 +117,7 @@ func (c *command) setName(name string) Command {
 	return c
 }
 
-func (c *command) addArgument(arg commandArgument) (Command, Error) {
+func (c *command) AddArgument(arg commandArgument) (Command, Error) {
 	for _, argument := range c.Arguments {
 		if argument.label == arg.label {
 			return nil, &SetupError{message: fmt.Sprintf("Argument %s for command %s already exists!", arg.label, c.Name)}
@@ -117,7 +127,7 @@ func (c *command) addArgument(arg commandArgument) (Command, Error) {
 	return c, nil
 }
 
-func (c *command) addOption(opt commandOption) (Command, Error) {
+func (c *command) AddOption(opt commandOption) (Command, Error) {
 	for _, option := range c.Options {
 		if option.label == opt.label {
 			return nil, &SetupError{message: fmt.Sprintf("Argument %s for command %s already exists!", opt.label, c.Name)}
@@ -130,6 +140,10 @@ func (c *command) addOption(opt commandOption) (Command, Error) {
 func (c *command) setHandler(commandHandler CommandHanlder) Command {
 	c.handler = commandHandler
 	return c
+}
+
+func (c *command) Validate() Error {
+	return nil
 }
 
 func (c *command) Handle(input CommandInput, writer io.Writer) Error {

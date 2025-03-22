@@ -31,7 +31,7 @@ func createSampleCommand() Command {
 	var err Error
 
 	// Add argument
-	if _, err = comm.addArgument(commandArgument{
+	if _, err = comm.AddArgument(commandArgument{
 		label:       "arg1",
 		description: "First argument",
 		position:    0,
@@ -41,7 +41,7 @@ func createSampleCommand() Command {
 	}
 
 	// Add option
-	if _, err = comm.addOption(commandOption{
+	if _, err = comm.AddOption(commandOption{
 		label:       "opt1",
 		description: "First option",
 		letter:      'o',
@@ -212,7 +212,7 @@ func TestDuplicateArgumentsAndOptions(t *testing.T) {
 	comm.setName("test")
 
 	t.Run("Duplicate Argument", func(t *testing.T) {
-		_, err := comm.addArgument(commandArgument{
+		_, err := comm.AddArgument(commandArgument{
 			label:       "arg1",
 			description: "First argument",
 			position:    0,
@@ -222,7 +222,7 @@ func TestDuplicateArgumentsAndOptions(t *testing.T) {
 			t.Fatalf("Unexpected error adding first argument: %v", err)
 		}
 
-		_, err = comm.addArgument(commandArgument{
+		_, err = comm.AddArgument(commandArgument{
 			label:       "arg1",
 			description: "Duplicate argument",
 			position:    1,
@@ -237,7 +237,7 @@ func TestDuplicateArgumentsAndOptions(t *testing.T) {
 	})
 
 	t.Run("Duplicate Option", func(t *testing.T) {
-		_, err := comm.addOption(commandOption{
+		_, err := comm.AddOption(commandOption{
 			label:       "opt1",
 			description: "First option",
 			letter:      'o',
@@ -248,7 +248,7 @@ func TestDuplicateArgumentsAndOptions(t *testing.T) {
 			t.Fatalf("Unexpected error adding first option: %v", err)
 		}
 
-		_, err = comm.addOption(commandOption{
+		_, err = comm.AddOption(commandOption{
 			label:       "opt1",
 			description: "Duplicate option",
 			letter:      'o',

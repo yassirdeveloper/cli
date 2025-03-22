@@ -55,7 +55,7 @@ func HelpCommand() Command {
 	command := &command{
 		helpText: "Display help information for commands.",
 	}
-	command.addOption(commandOpt)
+	command.AddOption(commandOpt)
 	command.setHandler(helpHandler)
 	return command
 }
