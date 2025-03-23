@@ -20,7 +20,7 @@ func versionHandler(_ CommandInput, writer io.Writer) Error {
 
 func VersionCommand() Command {
 	command := &command{
-		helpText: "Display the current version.",
+		Description: "Display the current version.",
 	}
 	command.setHandler(versionHandler)
 	return command

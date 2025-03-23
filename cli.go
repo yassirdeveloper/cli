@@ -20,7 +20,6 @@ var DEFAULT_WRITER = os.Stdout
 
 type Cli struct {
 	commander    commands.Commander
-	Writer       io.Writer
 	Name         string
 	HistoryLimit int
 	Symbol       string
@@ -28,16 +27,22 @@ type Cli struct {
 }
 
 func NewCli(name string) *Cli {
+	commander := commands.GetCommander()
+	commander.SetWriter(DEFAULT_WRITER)
 	cli := &Cli{
-		commander:    commands.GetCommander(),
+		commander:    commander,
 		Name:         name,
-		Writer:       DEFAULT_WRITER,
 		HistoryLimit: DEFAULT_HISTORY_LIMIT,
 		Symbol:       DEFAULT_SYMBOL,
 	}
 	cli.commander.AddCommand("exit", commands.ExitCommand()).
 		AddCommand("version", commands.VersionCommand()).
 		AddCommand("help", commands.HelpCommand())
+	return cli
+}
+
+func (cli *Cli) SetWriter(writer io.Writer) *Cli {
+	cli.commander.SetWriter(writer)
 	return cli
 }
 
@@ -72,35 +77,29 @@ func (cli *Cli) Run(interactiveMode bool) {
 		err := cli.commander.Run(args[1:])
 		if err != nil {
 			cli.commander.Write(err.Display())
-			os.Exit(1)
 		}
 		cli.commander.Write("\n")
-		os.Exit(0)
-	}
-
-	if !interactiveMode {
+	} else if !interactiveMode {
 		cli.commander.Write("Interactive shell is disabled!\n")
-		os.Exit(0)
-	}
-
-	line, err_ := readline.New(cli.Name + "> ")
-	if err_ != nil {
-		log.Fatalf("Error initializing readline: %v", err_)
-	}
-	defer line.Close()
-	line.Config.HistoryLimit = cli.HistoryLimit
-
-	for {
-		input, err_ := line.Readline()
+	} else {
+		line, err_ := readline.New(cli.Name + "> ")
 		if err_ != nil {
-			fmt.Println("\nExiting...") // Exit on EOF (Ctrl+D)
-			break
+			log.Fatalf("Error initializing readline: %v", err_)
 		}
-		line.SaveHistory(input)
-		err := cli.commander.Run(strings.Split(strings.TrimSpace(strings.TrimSuffix(input, "\n")), " "))
-		if err != nil {
-			cli.commander.Write(err.Display())
+		defer line.Close()
+		line.Config.HistoryLimit = cli.HistoryLimit
+		for {
+			input, err_ := line.Readline()
+			if err_ != nil {
+				fmt.Println("\nExiting...") // Exit on EOF (Ctrl+D)
+				break
+			}
+			line.SaveHistory(input)
+			err := cli.commander.Run(strings.Split(strings.TrimSpace(strings.TrimSuffix(input, "\n")), " "))
+			if err != nil {
+				cli.commander.Write(err.Display())
+			}
+			cli.commander.Write("\n")
 		}
-		cli.commander.Write("\n")
 	}
 }

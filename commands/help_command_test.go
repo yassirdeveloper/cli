@@ -15,10 +15,10 @@ func createHelpCommand() Command {
 
 func TestHelpCommand(t *testing.T) {
 	exitCmd := &command{
-		helpText: "Exit the application.",
+		Description: "Exit the application.",
 	}
 	versionCmd := &command{
-		helpText: "Display the application version.",
+		Description: "Display the application version.",
 	}
 	commander := GetCommander()
 	commander.AddCommand("exit", exitCmd)

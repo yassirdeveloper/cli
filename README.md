@@ -1,6 +1,6 @@
 # CLI Tool
 
-A simple powerful command-line interface (CLI) tool built in Go that provides a robust framework for executing commands with arguments, options, and dynamic help.
+A simple yet powerful command-line interface (CLI) tool built in Go that provides a robust framework for executing commands with arguments, options, and dynamic help. This tool supports both **interactive mode** and **command-line execution**, making it versatile for various use cases.
 
 ---
 
@@ -11,6 +11,7 @@ A simple powerful command-line interface (CLI) tool built in Go that provides a 
 - [Installation](#installation)
 - [Usage](#usage)
 - [Commands](#commands)
+- [Interactive Mode](#interactive-mode)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -25,6 +26,7 @@ This CLI tool is designed to provide a flexible and extensible command-line inte
 - Dynamic help generation for each command.
 - Persistent configuration and history support.
 - Cross-platform compatibility.
+- **Interactive shell mode** for real-time interaction.
 
 The tool is implemented in Go, ensuring high performance and ease of distribution across different operating systems.
 
@@ -38,6 +40,8 @@ The tool is implemented in Go, ensuring high performance and ease of distributio
 - **Error Handling**: Graceful error handling with descriptive messages.
 - **Extensibility**: Easily add new commands or modify existing ones.
 - **Cross-Platform**: Works seamlessly on Windows, macOS, and Linux.
+- **Interactive Shell**: Supports an interactive shell with persistent history and customizable prompts.
+- **Customizable Configuration**: Set the CLI's name, symbol, and history limit.
 
 ---
 
@@ -81,6 +85,12 @@ Run the CLI tool using the following format:
 cli [command] [arguments] [options]
 ```
 
+Alternatively, launch the tool in **interactive mode** by running:
+
+```bash
+cli
+```
+
 ### Examples
 
 1. Display the version:
@@ -101,6 +111,11 @@ cli [command] [arguments] [options]
 4. Exit the application:
    ```bash
    cli exit
+   ```
+
+5. Launch the interactive shell:
+   ```bash
+   cli
    ```
 
 ---
@@ -156,6 +171,56 @@ cli exit
 
 ---
 
+### Adding Custom Commands
+You can extend the CLI by adding custom commands programmatically. Use the `AddCommand` method to register new commands:
+
+```go
+cli := NewCli("my-cli")
+customCommand := &commands.Command{
+    Name:        "greet",
+    Description: "Greets the user.",
+    Handler: func(args []string) error {
+        fmt.Println("Hello, world!")
+        return nil
+    },
+}
+cli.AddCommand(customCommand)
+```
+
+---
+
+## Interactive Mode
+
+The CLI tool supports an **interactive shell** for real-time interaction. When launched without arguments, the tool enters interactive mode, where you can execute commands dynamically.
+
+### Features of Interactive Mode
+
+- **Persistent History**: Commands are saved in history for reuse (default limit: 100 entries).
+- **Customizable Prompt**: The prompt can be customized using the `Symbol` field.
+- **Graceful Exit**: Press `Ctrl+D` or type `exit` to quit the interactive shell.
+
+### Example Session
+
+```bash
+$ cli
+my-cli> version
+v1.0.0
+
+my-cli> help
+Available commands:
+- version: Displays the current version of the CLI tool.
+- help: Provides help information for commands.
+- exit: Exits the application.
+
+my-cli> greet
+Hello, world!
+
+my-cli> exit
+Exiting...
+```
+
+---
+
 ## Development
 
 To contribute to this project or extend its functionality, follow these steps:
@@ -189,3 +254,10 @@ Contributions are welcome! If you'd like to contribute, please follow these step
 ## License
 
 This project is licensed under the [MIT License](LICENSE). Feel free to use, modify, and distribute it as needed.
+
+---
+
+### Additional Notes
+
+- The CLI tool uses the [`readline`](https://github.com/chzyer/readline) library for interactive input and history management.
+- You can customize the CLI's behavior by modifying fields such as `Name`, `Symbol`, and `HistoryLimit` in the `Cli` struct.

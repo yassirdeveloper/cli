@@ -35,16 +35,16 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 
 	// Otherwise, list help for all commands
 	cmds := commander.GetCommands()
-	var helpText strings.Builder
-	helpText.WriteString("List of commands:\n")
+	var description strings.Builder
+	description.WriteString("List of commands:\n")
 	for _, cmd := range cmds {
 		comm, exists := commander.Get(cmd)
 		if !exists {
 			panic(fmt.Sprintf("Commander does not return a Command for an existing command name %s", cmd))
 		}
-		helpText.WriteString(fmt.Sprintf("\t- %-15s %s\n", cmd+":", comm.Help()))
+		description.WriteString(fmt.Sprintf("\t- %-15s %s\n", cmd+":", comm.Help()))
 	}
-	_, err_ := writer.Write([]byte(helpText.String()))
+	_, err_ := writer.Write([]byte(description.String()))
 	if err_ != nil {
 		return &UnexpectedError{err: err_}
 	}
@@ -53,7 +53,7 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 
 func HelpCommand() Command {
 	command := &command{
-		helpText: "Display help information for commands.",
+		Description: "Display help information for commands.",
 	}
 	command.AddOption(commandOpt)
 	command.setHandler(helpHandler)

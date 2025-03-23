@@ -35,11 +35,16 @@ type commandOption struct {
 type CommandInput interface {
 	ParseArgument(commandArgument) (any, Error)
 	ParseOption(commandOption) (any, Error)
+	String() string
 }
 
 type commandInput struct {
 	arguments map[string]any
 	options   map[string]any
+}
+
+func (c *commandInput) String() string {
+	return ""
 }
 
 func (c *commandInput) ParseArgument(arg commandArgument) (any, Error) {
@@ -81,17 +86,17 @@ type Command interface {
 }
 
 type command struct {
-	Name      string
-	Arguments []commandArgument
-	Options   []commandOption
-	handler   CommandHanlder
-	helpText  string
+	Name        string
+	Arguments   []commandArgument
+	Options     []commandOption
+	handler     CommandHanlder
+	Description string
 }
 
-func NewCommand(name string, helpText string, handler CommandHanlder) Command {
+func NewCommand(name string, description string, handler CommandHanlder) Command {
 	command := &command{
-		Name:     name,
-		helpText: helpText,
+		Name:        name,
+		Description: description,
 	}
 	command.setHandler(handler)
 	return command
@@ -109,7 +114,7 @@ func (c *command) Help() string {
 	if len(c.Options) > 0 {
 		usage += " [options]"
 	}
-	return c.helpText + " [" + usage + "]"
+	return c.Description + " [" + usage + "]"
 }
 
 func (c *command) setName(name string) Command {
@@ -143,6 +148,18 @@ func (c *command) setHandler(commandHandler CommandHanlder) Command {
 }
 
 func (c *command) Validate() Error {
+	if c.Name == "" {
+		return &SetupError{message: "command name cannot be empty"}
+	}
+	if len([]rune(c.Name)) < 2 {
+		return &SetupError{message: fmt.Sprintf("Command name %s is invalid, needs to be atleast 2 characters long!", c.Name)}
+	}
+	if len(strings.Split(c.Description, " ")) < 2 {
+		return &SetupError{message: fmt.Sprintf("Command %s is invalid, needs to have atleast 2 words long in its description: %s!", c.Name, c.Description)}
+	}
+	if c.handler == nil {
+		return &SetupError{message: fmt.Sprintf("Command %s is not properly set up, needs to have a handler!", c.Name)}
+	}
 	return nil
 }
 

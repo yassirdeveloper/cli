@@ -51,6 +51,10 @@ type CommandError struct {
 	message string
 }
 
+func NewUCommandError(message string) *CommandError {
+	return &CommandError{message: message}
+}
+
 func (e *CommandError) Error() string {
 	return e.message
 }
@@ -62,6 +66,10 @@ func (e *CommandError) Display() string {
 type UnexpectedError struct {
 	message string
 	err     error
+}
+
+func NewUnexpectedError(err error) *UnexpectedError {
+	return &UnexpectedError{message: "An unexpected error occured", err: err}
 }
 
 func (e *UnexpectedError) Error() string {

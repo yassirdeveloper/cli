@@ -11,6 +11,6 @@ func exitHandler(_ CommandInput, _ io.Writer) Error {
 }
 
 func ExitCommand() Command {
-	command := &command{handler: exitHandler, helpText: "Exit the application."}
+	command := &command{handler: exitHandler, Description: "Exit the application."}
 	return command
 }
