@@ -19,26 +19,6 @@ func TestNewCli(t *testing.T) {
 	assert.NotNil(t, cli.commander, "Commander should be initialized")
 }
 
-func TestSetVersion_Valid(t *testing.T) {
-	cli := NewCli("test-cli")
-
-	version := "v1.2.3"
-	updatedCli, err := cli.SetVersion(version)
-
-	assert.NoError(t, err, "No error should occur for valid version format")
-	assert.Equal(t, version, updatedCli.version, "Version should be set correctly")
-}
-
-func TestSetVersion_Invalid(t *testing.T) {
-	cli := NewCli("test-cli")
-
-	invalidVersion := "1.2.3"
-	_, err := cli.SetVersion(invalidVersion)
-
-	assert.Error(t, err, "Error should occur for invalid version format")
-	assert.Contains(t, err.Error(), "invalid version format", "Error message should indicate invalid format")
-}
-
 func TestAddCommand_Valid(t *testing.T) {
 	cli := NewCli("test-cli")
 

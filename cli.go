@@ -1,12 +1,10 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"regexp"
 	"strings"
 
 	readline "github.com/chzyer/readline"
@@ -18,15 +16,24 @@ const DEFAULT_HISTORY_LIMIT = 100
 
 var DEFAULT_WRITER = os.Stdout
 
+var cliInstance *Cli
+
 type Cli struct {
 	commander    commands.Commander
 	Name         string
 	HistoryLimit int
 	Symbol       string
-	version      string
 }
 
 func NewCli(name string) *Cli {
+	if cliInstance == nil {
+		cliInstance = createCli(name)
+		return cliInstance
+	}
+	return cliInstance
+}
+
+func createCli(name string) *Cli {
 	commander := commands.GetCommander()
 	commander.SetWriter(DEFAULT_WRITER)
 	cli := &Cli{
@@ -44,22 +51,6 @@ func NewCli(name string) *Cli {
 func (cli *Cli) SetWriter(writer io.Writer) *Cli {
 	cli.commander.SetWriter(writer)
 	return cli
-}
-
-func (cli *Cli) SetVersion(version string) (*Cli, error) {
-	// Define the regex pattern for the version format vX.Y.Z
-	versionRegex := `^v\d+\.\d+\.\d+$`
-	matched, err := regexp.MatchString(versionRegex, version)
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate version: %w", err)
-	}
-
-	if !matched {
-		return nil, errors.New("invalid version format. Expected format: vX.Y.Z (e.g., v1.0.0)")
-	}
-
-	cli.version = version
-	return cli, nil
 }
 
 func (cli *Cli) AddCommand(command commands.Command) error {
