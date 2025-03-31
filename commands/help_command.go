@@ -53,6 +53,7 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 
 func HelpCommand() Command {
 	command := &command{
+		Name:        "help",
 		Description: "Display help information for commands.",
 	}
 	command.AddOption(commandOpt)

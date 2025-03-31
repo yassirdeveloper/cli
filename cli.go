@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	readline "github.com/chzyer/readline"
@@ -19,21 +21,25 @@ var DEFAULT_WRITER = os.Stdout
 var cliInstance *Cli
 
 type Cli struct {
-	commander    commands.Commander
 	Name         string
 	HistoryLimit int
 	Symbol       string
+	commander    commands.Commander
 }
 
-func NewCli(name string) *Cli {
+func GetCliInstance() *Cli {
+	return cliInstance
+}
+
+func NewCli(name string, version string) *Cli {
 	if cliInstance == nil {
-		cliInstance = createCli(name)
+		cliInstance = createCli(name, version)
 		return cliInstance
 	}
 	return cliInstance
 }
 
-func createCli(name string) *Cli {
+func createCli(name string, version string) *Cli {
 	commander := commands.GetCommander()
 	commander.SetWriter(DEFAULT_WRITER)
 	cli := &Cli{
@@ -42,15 +48,35 @@ func createCli(name string) *Cli {
 		HistoryLimit: DEFAULT_HISTORY_LIMIT,
 		Symbol:       DEFAULT_SYMBOL,
 	}
-	cli.commander.AddCommand("exit", commands.ExitCommand()).
-		AddCommand("version", commands.VersionCommand()).
-		AddCommand("help", commands.HelpCommand())
+	cli.AddCommand(commands.ExitCommand())
+	cli.AddCommand(commands.HelpCommand())
+	cli.SetVersion(version)
 	return cli
+}
+
+func (cli *Cli) GetVersion() string {
+	return commands.GetVersionString()
 }
 
 func (cli *Cli) SetWriter(writer io.Writer) *Cli {
 	cli.commander.SetWriter(writer)
 	return cli
+}
+
+func (cli *Cli) SetVersion(version string) (*Cli, error) {
+	// Define the regex pattern for the version format vX.Y.Z
+	versionRegex := `^\d+\.\d+\.\d+$`
+	matched, err := regexp.MatchString(versionRegex, version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate version: %w", err)
+	}
+
+	if !matched {
+		return nil, errors.New("invalid version format. Expected format: X.Y.Z (e.g., 1.0.0)")
+	}
+
+	cli.AddCommand(commands.VersionCommand(version))
+	return cli, nil
 }
 
 func (cli *Cli) AddCommand(command commands.Command) error {
