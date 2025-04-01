@@ -107,14 +107,26 @@ func (c *command) String() string {
 }
 
 func (c *command) Help() string {
-	usage := "Usage: > " + c.Name
+	usageBuilder := &strings.Builder{}
+	usageBuilder.WriteString("Usage: > " + c.Name)
 	if len(c.Arguments) > 0 {
-		usage += " [arguments]"
+		for _, arg := range c.Arguments {
+			usageBuilder.WriteString(" " + arg.label)
+		}
 	}
 	if len(c.Options) > 0 {
-		usage += " [options]"
+		usageBuilder.WriteString(" [options]")
 	}
-	return c.Description + " [" + usage + "]"
+
+	helpText := fmt.Sprintf("\t- %-15s %s\n", c.Name+":", c.Description+" ["+usageBuilder.String()+"]")
+	if len(c.Options) > 0 {
+		optionsBuilder := &strings.Builder{}
+		for _, opt := range c.Options {
+			optionsBuilder.WriteString(fmt.Sprintf("\t   -%c | --%s:  %s.\n", opt.letter, opt.label, opt.description))
+		}
+		helpText += optionsBuilder.String()
+	}
+	return helpText
 }
 
 func (c *command) setName(name string) Command {

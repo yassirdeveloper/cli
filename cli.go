@@ -49,7 +49,7 @@ func createCli(name string, version string) *Cli {
 		Symbol:       DEFAULT_SYMBOL,
 	}
 	cli.AddCommand(commands.ExitCommand())
-	cli.AddCommand(commands.HelpCommand())
+	cli.AddCommand(commands.HelpCommand(""))
 	cli.SetVersion(version)
 	return cli
 }
@@ -77,6 +77,11 @@ func (cli *Cli) SetVersion(version string) (*Cli, error) {
 
 	cli.AddCommand(commands.VersionCommand(version))
 	return cli, nil
+}
+
+func (cli *Cli) SetHelpText(helpText string) *Cli {
+	cli.AddCommand(commands.HelpCommand(helpText))
+	return cli
 }
 
 func (cli *Cli) AddCommand(command commands.Command) error {

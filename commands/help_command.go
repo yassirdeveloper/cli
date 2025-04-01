@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+var helpText string
+
 var commandOpt = commandOption{label: "command", letter: 'c', name: "command", valueType: TypeString, description: "Name of the command to get detailed help for"}
 
 func helpHandler(input CommandInput, writer io.Writer) Error {
@@ -20,7 +22,7 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 		cmdName := opt.(string)
 		cmd, exists := commander.Get(cmdName)
 		if exists {
-			_, err := writer.Write([]byte(cmd.Help()))
+			_, err := writer.Write([]byte("Command description:\n" + cmd.Help()))
 			if err != nil {
 				return &UnexpectedError{err: err}
 			}
@@ -36,13 +38,16 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 	// Otherwise, list help for all commands
 	cmds := commander.GetCommands()
 	var description strings.Builder
+	if helpText != "" {
+		description.WriteString(helpText)
+	}
 	description.WriteString("List of commands:\n")
 	for _, cmd := range cmds {
 		comm, exists := commander.Get(cmd)
 		if !exists {
 			panic(fmt.Sprintf("Commander does not return a Command for an existing command name %s", cmd))
 		}
-		description.WriteString(fmt.Sprintf("\t- %-15s %s\n", cmd+":", comm.Help()))
+		description.WriteString(comm.Help())
 	}
 	_, err_ := writer.Write([]byte(description.String()))
 	if err_ != nil {
@@ -51,11 +56,12 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 	return nil
 }
 
-func HelpCommand() Command {
+func HelpCommand(s string) Command {
 	command := &command{
 		Name:        "help",
 		Description: "Display help information for commands.",
 	}
+	helpText = s
 	command.AddOption(commandOpt)
 	command.setHandler(helpHandler)
 	return command

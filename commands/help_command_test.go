@@ -9,7 +9,7 @@ import (
 
 // Helper function to create a sample HelpCommand with a mock commander
 func createHelpCommand() Command {
-	helpCmd := HelpCommand()
+	helpCmd := HelpCommand("")
 	return helpCmd
 }
 
