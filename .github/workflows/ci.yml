@@ -54,7 +54,7 @@ jobs:
 
       - name: Create New Tag
         run: |
-          git config --global "${{ secrets.GIT_USERNAME }}"
+          git config --global user.name "${{ secrets.GIT_USERNAME }}"
           git config --global user.email "${{ secrets.GIT_EMAIL }}"
           git tag ${{ env.new_tag }}
           git push origin ${{ env.new_tag }}
