@@ -55,12 +55,12 @@ jobs:
           echo "new_tag=$NEW_TAG" >> $GITHUB_ENV
 
       - name: Configure Git Credentials
-        with:
-          GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
-          GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
         run: |
           git config --global user.name "$GIT_USERNAME"
           git config --global user.email "$GIT_EMAIL"
+        with:
+          GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
+          GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
 
       - name: Create New Tag
         run: |
