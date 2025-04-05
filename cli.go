@@ -31,15 +31,18 @@ func GetCliInstance() *Cli {
 	return cliInstance
 }
 
-func NewCli(name string, version string) *Cli {
+func NewCli(name string, version string) (*Cli, error) {
 	if cliInstance == nil {
-		cliInstance = createCli(name, version)
-		return cliInstance
+		cliInstance, err := createCli(name, version)
+		if err != nil {
+			return cliInstance, err
+		}
+		return cliInstance, nil
 	}
-	return cliInstance
+	return cliInstance, nil
 }
 
-func createCli(name string, version string) *Cli {
+func createCli(name string, version string) (*Cli, error) {
 	commander := commands.GetCommander()
 	commander.SetWriter(DEFAULT_WRITER)
 	cli := &Cli{
@@ -48,10 +51,19 @@ func createCli(name string, version string) *Cli {
 		HistoryLimit: DEFAULT_HISTORY_LIMIT,
 		Symbol:       DEFAULT_SYMBOL,
 	}
-	cli.AddCommand(commands.ExitCommand())
-	cli.AddCommand(commands.HelpCommand(""))
-	cli.SetVersion(version)
-	return cli
+	err := cli.AddCommand(commands.ExitCommand())
+	if err != nil {
+		return cli, err
+	}
+	err = cli.AddCommand(commands.HelpCommand(""))
+	if err != nil {
+		return cli, err
+	}
+	cli, err = cli.SetVersion(version)
+	if err != nil {
+		return cli, err
+	}
+	return cli, nil
 }
 
 func (cli *Cli) GetVersion() string {

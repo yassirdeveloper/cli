@@ -11,7 +11,8 @@ import (
 )
 
 func TestNewCli(t *testing.T) {
-	cli := NewCli("test-cli", "0.0.0")
+	cli, err := NewCli("test-cli", "0.0.0")
+	assert.NoError(t, err, "No error should occur for valid cli")
 
 	assert.Equal(t, "test-cli", cli.Name, "Name should match the provided name")
 	assert.Equal(t, DEFAULT_SYMBOL, cli.Symbol, "Symbol should default to '>'")
@@ -19,28 +20,36 @@ func TestNewCli(t *testing.T) {
 	assert.NotNil(t, cli.commander, "Commander should be initialized")
 }
 
+func TestInvalidNewCli(t *testing.T) {
+	_, err := NewCli("test-cli", "bad")
+	assert.Error(t, err, "an error should occur for invalid cli")
+}
+
 func TestSetVersion_Valid(t *testing.T) {
-	cli := NewCli("test-cli", "0.0.0")
+	cli, err := NewCli("test-cli", "0.0.0")
+	assert.NoError(t, err, "No error should occur for valid cli")
 
 	version := "1.2.3"
-	_, err := cli.SetVersion(version)
+	_, err = cli.SetVersion(version)
 
 	assert.NoError(t, err, "No error should occur for valid version format")
 	assert.Equal(t, "v"+version, commands.GetVersionString(), "Version should be set correctly")
 }
 
 func TestSetVersion_Invalid(t *testing.T) {
-	cli := NewCli("test-cli", "0.0.0")
+	cli, err := NewCli("test-cli", "0.0.0")
+	assert.NoError(t, err, "No error should occur for valid cli")
 
 	invalidVersion := "v1.2.3"
-	_, err := cli.SetVersion(invalidVersion)
+	_, err = cli.SetVersion(invalidVersion)
 
 	assert.Error(t, err, "Error should occur for invalid version format")
 	assert.Contains(t, err.Error(), "invalid version format", "Error message should indicate invalid format")
 }
 
 func TestAddCommand_Valid(t *testing.T) {
-	cli := NewCli("test-cli", "0.0.0")
+	cli, err := NewCli("test-cli", "0.0.0")
+	assert.NoError(t, err, "No error should occur for valid cli")
 
 	cmd := commands.NewCommand(
 		"test",
@@ -51,14 +60,15 @@ func TestAddCommand_Valid(t *testing.T) {
 		},
 	)
 
-	err := cli.AddCommand(cmd)
+	err = cli.AddCommand(cmd)
 
 	assert.NoError(t, err, "No error should occur for valid command")
 	assert.Contains(t, cli.commander.GetCommands(), "test", "Command should be added to the commander")
 }
 
 func TestAddCommand_Invalid(t *testing.T) {
-	cli := NewCli("test-cli", "0.0.0")
+	cli, err := NewCli("test-cli", "0.0.0")
+	assert.NoError(t, err, "No error should occur for valid cli")
 
 	cmd := commands.NewCommand(
 		"",
@@ -68,14 +78,15 @@ func TestAddCommand_Invalid(t *testing.T) {
 		},
 	)
 
-	err := cli.AddCommand(cmd)
+	err = cli.AddCommand(cmd)
 
 	assert.Error(t, err, "Error should occur for invalid command")
 	assert.Contains(t, err.Error(), "command name cannot be empty", "Error message should indicate invalid command")
 }
 
 func TestRun_NonInteractiveMode(t *testing.T) {
-	cli := NewCli("test-cli", "0.0.0")
+	cli, err := NewCli("test-cli", "0.0.0")
+	assert.NoError(t, err, "No error should occur for valid cli")
 
 	// Add a mock command
 	cli.AddCommand(
@@ -102,7 +113,8 @@ func TestRun_NonInteractiveMode(t *testing.T) {
 }
 
 func TestRun_InteractiveMode(t *testing.T) {
-	cli := NewCli("test-cli", "0.0.0")
+	cli, err := NewCli("test-cli", "0.0.0")
+	assert.NoError(t, err, "No error should occur for valid cli")
 
 	// Add a mock command
 	cli.AddCommand(
