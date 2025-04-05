@@ -39,22 +39,27 @@ jobs:
       - name: Get Latest Tag
         id: get_latest_tag
         run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0)
-          echo "Latest tag: $LATEST_TAG"
+          # Ensure the latest tag starts with "v"
+          LATEST_TAG=$(git describe --tags --abbrev=0 | sed 's/^v//') # Strip "v" if present
+          echo "Latest tag (without v): $LATEST_TAG"
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_ENV
 
       - name: Calculate Next Patch Version
         id: calculate_next_version
         run: |
+          # Parse the latest tag into MAJOR, MINOR, PATCH
           IFS='.' read -r MAJOR MINOR PATCH <<< "${{ env.latest_tag }}"
           NEXT_PATCH=$((PATCH + 1))
-          NEW_TAG="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEXT_PATCH}" # Prepend "v" to the new tag
           echo "New tag: $NEW_TAG"
           echo "new_tag=$NEW_TAG" >> $GITHUB_ENV
 
+      - name: Configure Git Credentials
+        run: |
+          git config --global user.name "${{ secrets.GIT_USERNAME }}"
+          git config --global user.email "${{ secrets.GIT_EMAIL }}"
+
       - name: Create New Tag
         run: |
-          git config --global "${{ secrets.GIT_USERNAME }}"
-          git config --global user.email "${{ secrets.GIT_EMAIL }}"
           git tag ${{ env.new_tag }}
           git push origin ${{ env.new_tag }}
