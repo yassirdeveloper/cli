@@ -25,10 +25,13 @@ jobs:
       - name: Test
         run: go test -v ./...
 
-  patch_release:
+  release:
     runs-on: ubuntu-latest
     needs: build
-    if: contains(github.event.head_commit.message, '[PATCH_RELEASE]')
+    if: |
+      contains(github.event.head_commit.message, '[PATCH_RELEASE]') ||
+      contains(github.event.head_commit.message, '[MINOR_RELEASE]') ||
+      contains(github.event.head_commit.message, '[MAJOR_RELEASE]')
 
     steps:
       - name: Checkout Code
@@ -39,16 +42,40 @@ jobs:
       - name: Get Latest Tag
         id: get_latest_tag
         run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0)
-          echo "Latest tag: $LATEST_TAG"
+          # Ensure the latest tag starts with "v"
+          LATEST_TAG=$(git describe --tags --abbrev=0 | sed 's/^v//') # Strip "v" if present
+          echo "Latest tag (without v): $LATEST_TAG"
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_ENV
 
-      - name: Calculate Next Patch Version
+      - name: Determine Release Type
+        id: determine_release_type
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"[MAJOR_RELEASE]"* ]]; then
+            echo "release_type=major" >> $GITHUB_ENV
+          elif [[ "${{ github.event.head_commit.message }}" == *"[MINOR_RELEASE]"* ]]; then
+            echo "release_type=minor" >> $GITHUB_ENV
+          else
+            echo "release_type=patch" >> $GITHUB_ENV
+          fi
+
+      - name: Calculate Next Version
         id: calculate_next_version
         run: |
           IFS='.' read -r MAJOR MINOR PATCH <<< "${{ env.latest_tag }}"
-          NEXT_PATCH=$((PATCH + 1))
-          NEW_TAG="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          case "${{ env.release_type }}" in
+            major)
+              NEXT_MAJOR=$((MAJOR + 1))
+              NEW_TAG="v${NEXT_MAJOR}.0.0"
+              ;;
+            minor)
+              NEXT_MINOR=$((MINOR + 1))
+              NEW_TAG="v${MAJOR}.${NEXT_MINOR}.0"
+              ;;
+            patch)
+              NEXT_PATCH=$((PATCH + 1))
+              NEW_TAG="v${MAJOR}.${MINOR}.${NEXT_PATCH}"
+              ;;
+          esac
           echo "New tag: $NEW_TAG"
           echo "new_tag=$NEW_TAG" >> $GITHUB_ENV
 
