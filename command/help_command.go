@@ -1,16 +1,23 @@
-package commands
+package command
 
 import (
 	"fmt"
-	"io"
 	"strings"
+
+	"github.com/yassirdeveloper/cli/errors"
+	"github.com/yassirdeveloper/cli/operator"
 )
 
 var helpText string
 
-var commandOpt = commandOption{label: "command", letter: 'c', name: "command", valueType: TypeString, description: "Name of the command to get detailed help for"}
+var commandOpt = CommandOption{
+	Label:  "command",
+	Letter: 'c', Name: "command",
+	ValueType:   TypeString,
+	Description: "Name of the command to get detailed help for",
+}
 
-func helpHandler(input CommandInput, writer io.Writer) Error {
+func helpHandler(input CommandInput, operator operator.Operator) errors.Error {
 	commander := GetCommander()
 
 	// If a specific command name is provided, show help for that command
@@ -22,15 +29,15 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 		cmdName := opt.(string)
 		cmd, exists := commander.Get(cmdName)
 		if exists {
-			_, err := writer.Write([]byte("Command description:\n" + cmd.Help()))
+			err := operator.Write("Command description:\n" + cmd.Help())
 			if err != nil {
-				return &UnexpectedError{err: err}
+				return errors.NewUnexpectedError(err)
 			}
 			return nil
 		}
-		_, err := writer.Write([]byte(fmt.Sprintf("No help available for command: %s\n", cmdName)))
+		err := operator.Write(fmt.Sprintf("No help available for command: %s\n", cmdName))
 		if err != nil {
-			return &UnexpectedError{err: err}
+			return errors.NewUnexpectedError(err)
 		}
 		return nil
 	}
@@ -49,20 +56,20 @@ func helpHandler(input CommandInput, writer io.Writer) Error {
 		}
 		description.WriteString(comm.Help())
 	}
-	_, err_ := writer.Write([]byte(description.String()))
+	err_ := operator.Write(description.String())
 	if err_ != nil {
-		return &UnexpectedError{err: err_}
+		return errors.NewUnexpectedError(err_)
 	}
 	return nil
 }
 
 func HelpCommand(s string) Command {
-	command := &command{
-		Name:        "help",
-		Description: "Display help information for commands.",
-	}
+	cmd := NewCommand(
+		"help",
+		"Display help information for commands.",
+		helpHandler,
+	)
 	helpText = s
-	command.AddOption(commandOpt)
-	command.setHandler(helpHandler)
-	return command
+	cmd.AddOption(commandOpt)
+	return cmd
 }

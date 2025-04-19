@@ -1,11 +1,13 @@
-package commands
+package command
 
 import (
 	"fmt"
-	"io"
 	"maps"
 	"slices"
 	"strings"
+
+	"github.com/yassirdeveloper/cli/errors"
+	"github.com/yassirdeveloper/cli/operator"
 )
 
 const OptionLetterPrefix = "-"
@@ -17,24 +19,24 @@ type Stringer interface {
 	String() string
 }
 
-type commandArgument struct {
-	label       string
-	description string
-	position    int
-	valueType   ValueType
+type CommandArgument struct {
+	Label       string
+	Description string
+	Position    int
+	ValueType   ValueType
 }
 
-type commandOption struct {
-	label       string
-	description string
-	letter      rune
-	name        string
-	valueType   ValueType
+type CommandOption struct {
+	Label       string
+	Description string
+	Letter      rune
+	Name        string
+	ValueType   ValueType
 }
 
 type CommandInput interface {
-	ParseArgument(commandArgument) (any, Error)
-	ParseOption(commandOption) (any, Error)
+	ParseArgument(CommandArgument) (any, errors.Error)
+	ParseOption(CommandOption) (any, errors.Error)
 	String() string
 }
 
@@ -47,48 +49,48 @@ func (c *commandInput) String() string {
 	return ""
 }
 
-func (c *commandInput) ParseArgument(arg commandArgument) (any, Error) {
-	argValue := c.arguments[arg.label]
-	argValue, err := ParseValue(arg.valueType, argValue)
+func (c *commandInput) ParseArgument(arg CommandArgument) (any, errors.Error) {
+	argValue := c.arguments[arg.Label]
+	argValue, err := ParseValue(arg.ValueType, argValue)
 	if err != nil {
-		return nil, &CommandError{message: "Invalid type for argument: " + arg.label}
+		return nil, &CommandError{message: "Invalid type for argument: " + arg.Label}
 	}
 	return argValue, nil
 }
 
-func (c *commandInput) ParseOption(opt commandOption) (any, Error) {
-	optValue := c.options[opt.label]
+func (c *commandInput) ParseOption(opt CommandOption) (any, errors.Error) {
+	optValue := c.options[opt.Label]
 	if optValue == nil {
 		return nil, nil
 	}
-	if opt.valueType == NoType {
-		return c.options[opt.label], nil
+	if opt.ValueType == NoType {
+		return c.options[opt.Label], nil
 	}
-	optValue, err := ParseValue(opt.valueType, optValue)
+	optValue, err := ParseValue(opt.ValueType, optValue)
 	if err != nil {
-		return nil, &CommandError{message: "Invalid type for option: " + opt.label}
+		return nil, &CommandError{message: "Invalid type for option: " + opt.Label}
 	}
 	return optValue, nil
 }
 
-type CommandHanlder func(CommandInput, io.Writer) Error
+type CommandHanlder func(CommandInput, operator.Operator) errors.Error
 
 type Command interface {
 	setName(string) Command
-	AddArgument(commandArgument) (Command, Error)
-	AddOption(commandOption) (Command, Error)
+	AddArgument(CommandArgument) (Command, errors.Error)
+	AddOption(CommandOption) (Command, errors.Error)
 	setHandler(CommandHanlder) Command
-	Validate() Error
-	Handle(CommandInput, io.Writer) Error
-	Parse([]string) (CommandInput, Error)
+	Validate() errors.Error
+	Handle(CommandInput, operator.Operator) errors.Error
+	Parse([]string) (CommandInput, errors.Error)
 	String() string
 	Help() string
 }
 
 type command struct {
 	Name        string
-	Arguments   []commandArgument
-	Options     []commandOption
+	Arguments   []CommandArgument
+	Options     []CommandOption
 	handler     CommandHanlder
 	Description string
 }
@@ -111,7 +113,7 @@ func (c *command) Help() string {
 	usageBuilder.WriteString("Usage: > " + c.Name)
 	if len(c.Arguments) > 0 {
 		for _, arg := range c.Arguments {
-			usageBuilder.WriteString(" " + arg.label)
+			usageBuilder.WriteString(" " + arg.Label)
 		}
 	}
 	if len(c.Options) > 0 {
@@ -122,7 +124,7 @@ func (c *command) Help() string {
 	if len(c.Options) > 0 {
 		optionsBuilder := &strings.Builder{}
 		for _, opt := range c.Options {
-			optionsBuilder.WriteString(fmt.Sprintf("\t   -%c | --%s:  %s.\n", opt.letter, opt.label, opt.description))
+			optionsBuilder.WriteString(fmt.Sprintf("\t   -%c | --%s:  %s.\n", opt.Letter, opt.Label, opt.Description))
 		}
 		helpText += optionsBuilder.String()
 	}
@@ -134,20 +136,20 @@ func (c *command) setName(name string) Command {
 	return c
 }
 
-func (c *command) AddArgument(arg commandArgument) (Command, Error) {
+func (c *command) AddArgument(arg CommandArgument) (Command, errors.Error) {
 	for _, argument := range c.Arguments {
-		if argument.label == arg.label {
-			return nil, &SetupError{message: fmt.Sprintf("Argument %s for command %s already exists!", arg.label, c.Name)}
+		if argument.Label == arg.Label {
+			return nil, errors.NewSetupError(fmt.Sprintf("Argument %s for command %s already exists!", arg.Label, c.Name))
 		}
 	}
 	c.Arguments = append(c.Arguments, arg)
 	return c, nil
 }
 
-func (c *command) AddOption(opt commandOption) (Command, Error) {
+func (c *command) AddOption(opt CommandOption) (Command, errors.Error) {
 	for _, option := range c.Options {
-		if option.label == opt.label {
-			return nil, &SetupError{message: fmt.Sprintf("Argument %s for command %s already exists!", opt.label, c.Name)}
+		if option.Label == opt.Label {
+			return nil, errors.NewSetupError(fmt.Sprintf("Argument %s for command %s already exists!", opt.Label, c.Name))
 		}
 	}
 	c.Options = append(c.Options, opt)
@@ -159,27 +161,27 @@ func (c *command) setHandler(commandHandler CommandHanlder) Command {
 	return c
 }
 
-func (c *command) Validate() Error {
+func (c *command) Validate() errors.Error {
 	if c.Name == "" {
-		return &SetupError{message: "command name cannot be empty"}
+		return errors.NewSetupError("command name cannot be empty")
 	}
 	if len([]rune(c.Name)) < 2 {
-		return &SetupError{message: fmt.Sprintf("Command name %s is invalid, needs to be atleast 2 characters long!", c.Name)}
+		return errors.NewSetupError(fmt.Sprintf("Command name %s is invalid, needs to be atleast 2 characters long!", c.Name))
 	}
 	if len(strings.Split(c.Description, " ")) < 2 {
-		return &SetupError{message: fmt.Sprintf("Command %s is invalid, needs to have atleast 2 words long in its description: %s!", c.Name, c.Description)}
+		return errors.NewSetupError(fmt.Sprintf("Command %s is invalid, needs to have atleast 2 words long in its description: %s!", c.Name, c.Description))
 	}
 	if c.handler == nil {
-		return &SetupError{message: fmt.Sprintf("Command %s is not properly set up, needs to have a handler!", c.Name)}
+		return errors.NewSetupError(fmt.Sprintf("Command %s is not properly set up, needs to have a handler!", c.Name))
 	}
 	return nil
 }
 
-func (c *command) Handle(input CommandInput, writer io.Writer) Error {
-	return c.handler(input, writer)
+func (c *command) Handle(input CommandInput, operator operator.Operator) errors.Error {
+	return c.handler(input, operator)
 }
 
-func (c *command) Parse(input []string) (CommandInput, Error) {
+func (c *command) Parse(input []string) (CommandInput, errors.Error) {
 	inputLength := len(input)
 	inputArgs := make(map[string]any)
 	inputOpts := make(map[string]any)
@@ -190,33 +192,33 @@ func (c *command) Parse(input []string) (CommandInput, Error) {
 		return nil, &InvalidCommandUsageError{command: c}
 	}
 	for _, arg := range c.Arguments {
-		value, err := ParseValue(arg.valueType, input[arg.position])
+		value, err := ParseValue(arg.ValueType, input[arg.Position])
 		if err != nil {
 			return nil, &InvalidCommandUsageError{command: c}
 		}
-		inputArgs[arg.label] = value
-		input = slices.Delete(input, arg.position, arg.position+1)
+		inputArgs[arg.Label] = value
+		input = slices.Delete(input, arg.Position, arg.Position+1)
 	}
 
 	// Parse options
 	for _, opt := range c.Options {
-		index := slices.Index(input, OptionLetterPrefix+string(opt.letter))
+		index := slices.Index(input, OptionLetterPrefix+string(opt.Letter))
 		if index == -1 {
-			index = slices.Index(input, OptionNamePrefix+opt.name)
+			index = slices.Index(input, OptionNamePrefix+opt.Name)
 		}
 		if index != -1 {
-			if opt.valueType == NoType {
-				inputOpts[opt.label] = true
+			if opt.ValueType == NoType {
+				inputOpts[opt.Label] = true
 				input = slices.Delete(input, index, index)
 			} else {
 				if index+1 >= inputLength {
 					return nil, &InvalidCommandUsageError{command: c}
 				}
-				value, err := ParseValue(opt.valueType, input[index+1])
+				value, err := ParseValue(opt.ValueType, input[index+1])
 				if err != nil {
 					return nil, &InvalidCommandUsageError{command: c}
 				}
-				inputOpts[opt.label] = value
+				inputOpts[opt.Label] = value
 				input = slices.Delete(input, index, index+2)
 			}
 		}
@@ -239,14 +241,14 @@ type Commander interface {
 	Get(string) (Command, bool)
 	AddCommand(string, Command) Commander
 	GetCommands() []string
-	SetWriter(io.Writer) Commander
-	Write(string) Error
-	Run([]string) Error
+	SetOperator(operator.Operator) Commander
+	Write(string) errors.Error
+	Run([]string) errors.Error
 }
 
 type commander struct {
 	commands map[string]Command
-	writer   io.Writer
+	operator operator.Operator
 }
 
 var commanderInstance Commander
@@ -277,20 +279,20 @@ func (c *commander) GetCommands() []string {
 	return slices.Collect(maps.Keys(c.commands))
 }
 
-func (c *commander) SetWriter(writer io.Writer) Commander {
-	c.writer = writer
+func (c *commander) SetOperator(operator operator.Operator) Commander {
+	c.operator = operator
 	return c
 }
 
-func (c *commander) Write(output string) Error {
-	_, err := c.writer.Write([]byte(output))
+func (c *commander) Write(output string) errors.Error {
+	err := c.operator.Write(output)
 	if err != nil {
-		return &UnexpectedError{err: err}
+		return errors.NewUnexpectedError(err)
 	}
 	return nil
 }
 
-func (c *commander) Run(in []string) Error {
+func (c *commander) Run(in []string) errors.Error {
 	commandName := strings.ToLower(in[0])
 	command, exists := c.Get(commandName)
 	if !exists {
@@ -301,5 +303,5 @@ func (c *commander) Run(in []string) Error {
 	if err != nil {
 		return err
 	}
-	return command.Handle(inputCommand, c.writer)
+	return command.Handle(inputCommand, c.operator)
 }

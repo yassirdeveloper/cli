@@ -2,13 +2,34 @@ package cli
 
 import (
 	"bytes"
-	"io"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yassirdeveloper/cli/commands"
+	"github.com/yassirdeveloper/cli/command"
+	"github.com/yassirdeveloper/cli/errors"
+	"github.com/yassirdeveloper/cli/operator"
 )
+
+type mockOperator struct {
+	output bytes.Buffer
+}
+
+func (m *mockOperator) Write(s string) errors.Error {
+	_, err := m.output.Write([]byte(s))
+	if err != nil {
+		return errors.NewUnexpectedError(err)
+	}
+	return nil
+}
+
+func (m *mockOperator) String() string {
+	return m.output.String()
+}
+
+func (m *mockOperator) Read() (string, errors.Error) {
+	return "", nil
+}
 
 func TestNewCli(t *testing.T) {
 	cli, err := NewCli("test-cli", "0.0.0")
@@ -33,7 +54,7 @@ func TestSetVersion_Valid(t *testing.T) {
 	_, err = cli.SetVersion(version)
 
 	assert.NoError(t, err, "No error should occur for valid version format")
-	assert.Equal(t, "v"+version, commands.GetVersionString(), "Version should be set correctly")
+	assert.Equal(t, "v"+version, command.GetVersionString(), "Version should be set correctly")
 }
 
 func TestSetVersion_Invalid(t *testing.T) {
@@ -51,12 +72,12 @@ func TestAddCommand_Valid(t *testing.T) {
 	cli, err := NewCli("test-cli", "0.0.0")
 	assert.NoError(t, err, "No error should occur for valid cli")
 
-	cmd := commands.NewCommand(
+	cmd := command.NewCommand(
 		"test",
 		"A test command",
-		func(input commands.CommandInput, writer io.Writer) commands.Error {
-			_, err := writer.Write([]byte("Test command executed\n"))
-			return commands.NewUnexpectedError(err)
+		func(input command.CommandInput, writer operator.Operator) errors.Error {
+			err := writer.Write("Test command executed\n")
+			return errors.NewUnexpectedError(err)
 		},
 	)
 
@@ -70,10 +91,10 @@ func TestAddCommand_Invalid(t *testing.T) {
 	cli, err := NewCli("test-cli", "0.0.0")
 	assert.NoError(t, err, "No error should occur for valid cli")
 
-	cmd := commands.NewCommand(
+	cmd := command.NewCommand(
 		"",
 		"A test command",
-		func(input commands.CommandInput, writer io.Writer) commands.Error {
+		func(input command.CommandInput, writer operator.Operator) errors.Error {
 			return nil
 		},
 	)
@@ -90,12 +111,12 @@ func TestRun_NonInteractiveMode(t *testing.T) {
 
 	// Add a mock command
 	cli.AddCommand(
-		commands.NewCommand(
+		command.NewCommand(
 			"greet",
 			"Greets the user",
-			func(input commands.CommandInput, writer io.Writer) commands.Error {
-				_, err := writer.Write([]byte("Hello, world!\n"))
-				return commands.NewUnexpectedError(err)
+			func(input command.CommandInput, writer operator.Operator) errors.Error {
+				err := writer.Write("Hello, world!\n")
+				return errors.NewUnexpectedError(err)
 			},
 		),
 	)
@@ -103,8 +124,8 @@ func TestRun_NonInteractiveMode(t *testing.T) {
 	// Mock os.Args
 	os.Args = []string{"cli", "greet"}
 
-	var buf bytes.Buffer
-	cli.SetWriter(&buf)
+	var buf mockOperator
+	cli.SetOperator(&buf)
 
 	cli.Run(false)
 
@@ -118,18 +139,18 @@ func TestRun_InteractiveMode(t *testing.T) {
 
 	// Add a mock command
 	cli.AddCommand(
-		commands.NewCommand(
+		command.NewCommand(
 			"echo",
 			"Echoes the input",
-			func(input commands.CommandInput, writer io.Writer) commands.Error {
-				_, err := writer.Write([]byte(input.String() + "\n"))
-				return commands.NewUnexpectedError(err)
+			func(input command.CommandInput, writer operator.Operator) errors.Error {
+				err := writer.Write(input.String() + "\n")
+				return errors.NewUnexpectedError(err)
 			},
 		),
 	)
 	// Set up a custom writer to capture output
-	var buf bytes.Buffer
-	cli.SetWriter(&buf)
+	var buf mockOperator
+	cli.SetOperator(&buf)
 
 	// Simulate interactive mode
 	go func() {

@@ -1,64 +1,87 @@
-package commands
+package command
 
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
+
+	"github.com/yassirdeveloper/cli/errors"
+	"github.com/yassirdeveloper/cli/operator"
 )
 
-// Mock Writer for testing output
-type mockWriter struct {
+func createExitCommand() Command {
+	exitCmd := ExitCommand()
+	return exitCmd
+}
+
+func createVersionCommand(v string) Command {
+	return VersionCommand(v)
+}
+
+func createHelpCommand() Command {
+	helpCmd := HelpCommand("")
+	return helpCmd
+}
+
+type mockOperator struct {
 	output bytes.Buffer
 }
 
-func (m *mockWriter) Write(p []byte) (n int, err error) {
-	return m.output.Write(p)
+func (m *mockOperator) Write(s string) errors.Error {
+	_, err := m.output.Write([]byte(s))
+	if err != nil {
+		return errors.NewUnexpectedError(err)
+	}
+	return nil
 }
 
-func (m *mockWriter) Reset() {
+func (m *mockOperator) Reset() {
 	m.output.Reset()
 }
 
-func (m *mockWriter) String() string {
+func (m *mockOperator) String() string {
 	return m.output.String()
+}
+
+func (m *mockOperator) Read() (string, errors.Error) {
+	return "", nil
 }
 
 // Helper function to create a sample command
 func createSampleCommand() Command {
 	comm := &command{}
 	comm.setName("test")
-	var err Error
+	var err errors.Error
 
 	// Add argument
-	if _, err = comm.AddArgument(commandArgument{
-		label:       "arg1",
-		description: "First argument",
-		position:    0,
-		valueType:   TypeString,
+	if _, err = comm.AddArgument(CommandArgument{
+		Label:       "arg1",
+		Description: "First argument",
+		Position:    0,
+		ValueType:   TypeString,
 	}); err != nil {
 		panic(err)
 	}
 
 	// Add option
-	if _, err = comm.AddOption(commandOption{
-		label:       "opt1",
-		description: "First option",
-		letter:      'o',
-		name:        "option1",
-		valueType:   TypeString,
+	if _, err = comm.AddOption(CommandOption{
+		Label:       "opt1",
+		Description: "First option",
+		Letter:      'o',
+		Name:        "option1",
+		ValueType:   TypeString,
 	}); err != nil {
 		panic(err)
 	}
 
 	// Set handler
-	comm.setHandler(func(input CommandInput, writer io.Writer) Error {
-		argValue, err := input.ParseArgument(commandArgument{label: "arg1", valueType: TypeString})
+	comm.setHandler(func(input CommandInput, operator operator.Operator) errors.Error {
+		argValue, err := input.ParseArgument(CommandArgument{Label: "arg1", ValueType: TypeString})
 		if err != nil {
 			return err
 		}
-		optValue, _ := input.ParseOption(commandOption{label: "opt1", valueType: TypeString})
-		writer.Write([]byte("Arg: " + argValue.(string) + ", Opt: " + optValue.(string)))
+		optValue, _ := input.ParseOption(CommandOption{Label: "opt1", ValueType: TypeString})
+		operator.Write("Arg: " + argValue.(string) + ", Opt: " + optValue.(string))
 		return nil
 	})
 
@@ -77,7 +100,7 @@ func TestCommandParsing(t *testing.T) {
 			t.Fatal("Parsed input should not be nil")
 		}
 
-		argValue, err := input.ParseArgument(commandArgument{label: "arg1", valueType: TypeString})
+		argValue, err := input.ParseArgument(CommandArgument{Label: "arg1", ValueType: TypeString})
 		if err != nil {
 			t.Fatalf("Expected no error parsing argument, but got: %v", err)
 		}
@@ -85,7 +108,7 @@ func TestCommandParsing(t *testing.T) {
 			t.Errorf("Expected argument value 'value1', but got '%v'", argValue)
 		}
 
-		optValue, err := input.ParseOption(commandOption{label: "opt1", valueType: TypeString})
+		optValue, err := input.ParseOption(CommandOption{Label: "opt1", ValueType: TypeString})
 		if err != nil {
 			t.Fatalf("Expected no error parsing option, but got: %v", err)
 		}
@@ -117,7 +140,7 @@ func TestCommandParsing(t *testing.T) {
 
 func TestCommandExecution(t *testing.T) {
 	comm := createSampleCommand()
-	writer := &mockWriter{}
+	writer := &mockOperator{}
 
 	t.Run("Successful Execution", func(t *testing.T) {
 		err := comm.Handle(&commandInput{
@@ -138,7 +161,7 @@ func TestCommandExecution(t *testing.T) {
 
 	t.Run("Handler Error", func(t *testing.T) {
 		failingCommand := &command{}
-		failingCommand.setHandler(func(input CommandInput, writer io.Writer) Error {
+		failingCommand.setHandler(func(input CommandInput, writer operator.Operator) errors.Error {
 			return &CommandError{message: "handler failed"}
 		})
 
@@ -151,7 +174,7 @@ func TestCommandExecution(t *testing.T) {
 
 func TestCommander(t *testing.T) {
 	commander := GetCommander()
-	writer := &mockWriter{}
+	writer := &mockOperator{}
 
 	t.Run("Add and Get Command", func(t *testing.T) {
 		command := createSampleCommand()
@@ -175,7 +198,7 @@ func TestCommander(t *testing.T) {
 
 	t.Run("Run Command", func(t *testing.T) {
 		commander.AddCommand("runTest", createSampleCommand())
-		commander.SetWriter(writer)
+		commander.SetOperator(writer)
 
 		err := commander.Run([]string{"runTest", "argValue", "-o", "optValue"})
 		if err != nil {
@@ -212,53 +235,53 @@ func TestDuplicateArgumentsAndOptions(t *testing.T) {
 	comm.setName("test")
 
 	t.Run("Duplicate Argument", func(t *testing.T) {
-		_, err := comm.AddArgument(commandArgument{
-			label:       "arg1",
-			description: "First argument",
-			position:    0,
-			valueType:   TypeString,
+		_, err := comm.AddArgument(CommandArgument{
+			Label:       "arg1",
+			Description: "First argument",
+			Position:    0,
+			ValueType:   TypeString,
 		})
 		if err != nil {
 			t.Fatalf("Unexpected error adding first argument: %v", err)
 		}
 
-		_, err = comm.AddArgument(commandArgument{
-			label:       "arg1",
-			description: "Duplicate argument",
-			position:    1,
-			valueType:   TypeString,
+		_, err = comm.AddArgument(CommandArgument{
+			Label:       "arg1",
+			Description: "Duplicate argument",
+			Position:    1,
+			ValueType:   TypeString,
 		})
 		if err == nil {
 			t.Fatal("Expected an error for duplicate argument, but got none")
 		}
-		if _, ok := err.(*SetupError); !ok {
+		if _, ok := err.(*errors.SetupError); !ok {
 			t.Errorf("Expected SetupError, but got %T", err)
 		}
 	})
 
 	t.Run("Duplicate Option", func(t *testing.T) {
-		_, err := comm.AddOption(commandOption{
-			label:       "opt1",
-			description: "First option",
-			letter:      'o',
-			name:        "option1",
-			valueType:   TypeString,
+		_, err := comm.AddOption(CommandOption{
+			Label:       "opt1",
+			Description: "First option",
+			Letter:      'o',
+			Name:        "option1",
+			ValueType:   TypeString,
 		})
 		if err != nil {
 			t.Fatalf("Unexpected error adding first option: %v", err)
 		}
 
-		_, err = comm.AddOption(commandOption{
-			label:       "opt1",
-			description: "Duplicate option",
-			letter:      'o',
-			name:        "option1",
-			valueType:   TypeString,
+		_, err = comm.AddOption(CommandOption{
+			Label:       "opt1",
+			Description: "Duplicate option",
+			Letter:      'o',
+			Name:        "option1",
+			ValueType:   TypeString,
 		})
 		if err == nil {
 			t.Fatal("Expected an error for duplicate option, but got none")
 		}
-		if _, ok := err.(*SetupError); !ok {
+		if _, ok := err.(*errors.SetupError); !ok {
 			t.Errorf("Expected SetupError, but got %T", err)
 		}
 	})

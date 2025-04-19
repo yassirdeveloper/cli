@@ -3,28 +3,27 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"regexp"
 	"strings"
 
 	readline "github.com/chzyer/readline"
-	commands "github.com/yassirdeveloper/cli/commands"
+	"github.com/yassirdeveloper/cli/command"
+	"github.com/yassirdeveloper/cli/operator"
 )
 
 const DEFAULT_SYMBOL = ">"
 const DEFAULT_HISTORY_LIMIT = 100
 
-var DEFAULT_WRITER = os.Stdout
-
+var DEFAULT_OPERATOR = operator.NewStdOperator('\n', 4096)
 var cliInstance *Cli
 
 type Cli struct {
 	Name         string
 	HistoryLimit int
 	Symbol       string
-	commander    commands.Commander
+	commander    command.Commander
 }
 
 func GetCliInstance() *Cli {
@@ -43,19 +42,19 @@ func NewCli(name string, version string) (*Cli, error) {
 }
 
 func createCli(name string, version string) (*Cli, error) {
-	commander := commands.GetCommander()
-	commander.SetWriter(DEFAULT_WRITER)
+	commander := command.GetCommander()
+	commander.SetOperator(DEFAULT_OPERATOR)
 	cli := &Cli{
 		commander:    commander,
 		Name:         name,
 		HistoryLimit: DEFAULT_HISTORY_LIMIT,
 		Symbol:       DEFAULT_SYMBOL,
 	}
-	err := cli.AddCommand(commands.ExitCommand())
+	err := cli.AddCommand(command.ExitCommand())
 	if err != nil {
 		return cli, err
 	}
-	err = cli.AddCommand(commands.HelpCommand(""))
+	err = cli.AddCommand(command.HelpCommand(""))
 	if err != nil {
 		return cli, err
 	}
@@ -67,11 +66,11 @@ func createCli(name string, version string) (*Cli, error) {
 }
 
 func (cli *Cli) GetVersion() string {
-	return commands.GetVersionString()
+	return command.GetVersionString()
 }
 
-func (cli *Cli) SetWriter(writer io.Writer) *Cli {
-	cli.commander.SetWriter(writer)
+func (cli *Cli) SetOperator(operator operator.Operator) *Cli {
+	cli.commander.SetOperator(operator)
 	return cli
 }
 
@@ -87,16 +86,16 @@ func (cli *Cli) SetVersion(version string) (*Cli, error) {
 		return nil, errors.New("invalid version format. Expected format: X.Y.Z (e.g., 1.0.0)")
 	}
 
-	cli.AddCommand(commands.VersionCommand(version))
+	cli.AddCommand(command.VersionCommand(version))
 	return cli, nil
 }
 
 func (cli *Cli) SetHelpText(helpText string) *Cli {
-	cli.AddCommand(commands.HelpCommand(helpText))
+	cli.AddCommand(command.HelpCommand(helpText))
 	return cli
 }
 
-func (cli *Cli) AddCommand(command commands.Command) error {
+func (cli *Cli) AddCommand(command command.Command) error {
 	err := command.Validate()
 	if err != nil {
 		return err

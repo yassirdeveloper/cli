@@ -1,4 +1,4 @@
-package commands
+package command
 
 import (
 	"testing"
@@ -6,14 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Helper function to create a sample VersionCommand
-func createVersionCommand(v string) Command {
-	return VersionCommand(v)
-}
-
 func TestVersionCommand(t *testing.T) {
 	// Set up a mock writer to capture output
-	writer := &mockWriter{}
+	writer := &mockOperator{}
 
 	// Create the VersionCommand
 	version = "3.6.8"

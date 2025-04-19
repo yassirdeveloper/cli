@@ -1,13 +1,8 @@
-package commands
+package command
 
 import (
 	"fmt"
 )
-
-type Error interface {
-	Error() string
-	Display() string
-}
 
 type InvalidCommandError struct {
 	command string
@@ -61,33 +56,4 @@ func (e *CommandError) Error() string {
 
 func (e *CommandError) Display() string {
 	return e.message
-}
-
-type UnexpectedError struct {
-	message string
-	err     error
-}
-
-func NewUnexpectedError(err error) *UnexpectedError {
-	return &UnexpectedError{message: "An unexpected error occured", err: err}
-}
-
-func (e *UnexpectedError) Error() string {
-	return fmt.Sprintf("%s: %s", e.message, e.err)
-}
-
-func (e *UnexpectedError) Display() string {
-	return "An unexpected error occured!"
-}
-
-type SetupError struct {
-	message string
-}
-
-func (e *SetupError) Error() string {
-	return e.message
-}
-
-func (e *SetupError) Display() string {
-	return "An error occured during steup:" + e.message
 }

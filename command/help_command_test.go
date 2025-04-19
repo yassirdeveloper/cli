@@ -1,4 +1,4 @@
-package commands
+package command
 
 import (
 	"strings"
@@ -7,27 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Helper function to create a sample HelpCommand with a mock commander
-func createHelpCommand() Command {
-	helpCmd := HelpCommand("")
-	return helpCmd
-}
-
 func TestHelpCommand(t *testing.T) {
-	exitCmd := &command{
-		Description: "Exit the application.",
-	}
-	versionCmd := &command{
-		Description: "Display the application version.",
-	}
+	exitCmd := createExitCommand()
+	versionCmd := createVersionCommand("0.0.0")
 	commander := GetCommander()
 	commander.AddCommand("exit", exitCmd)
 	commander.AddCommand("version", versionCmd)
 
 	helpCommand := createHelpCommand()
 
-	// Mock writer to capture output
-	writer := &mockWriter{}
+	writer := &mockOperator{}
 
 	t.Run("List All Commands", func(t *testing.T) {
 		input := &commandInput{
