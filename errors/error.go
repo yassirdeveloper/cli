@@ -20,7 +20,7 @@ func (e *BaseError) Display() string {
 	return e.message
 }
 
-func New(msg string) error {
+func New(msg string) Error {
 	return &BaseError{
 		message: msg,
 	}
