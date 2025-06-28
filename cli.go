@@ -17,7 +17,6 @@ const DEFAULT_SYMBOL = ">"
 const DEFAULT_HISTORY_LIMIT = 100
 
 var DEFAULT_OPERATOR = operator.NewStdOperator('\n', 4096)
-var cliInstance *Cli
 
 type Cli struct {
 	Name         string
@@ -26,22 +25,7 @@ type Cli struct {
 	commander    command.Commander
 }
 
-func GetCliInstance() *Cli {
-	return cliInstance
-}
-
 func NewCli(name string, version string) (*Cli, error) {
-	if cliInstance == nil {
-		cliInstance, err := createCli(name, version)
-		if err != nil {
-			return cliInstance, err
-		}
-		return cliInstance, nil
-	}
-	return cliInstance, nil
-}
-
-func createCli(name string, version string) (*Cli, error) {
 	commander := command.GetCommander()
 	commander.SetOperator(DEFAULT_OPERATOR)
 	cli := &Cli{
@@ -75,15 +59,15 @@ func (cli *Cli) SetOperator(operator operator.Operator) *Cli {
 }
 
 func (cli *Cli) SetVersion(version string) (*Cli, error) {
-	// Define the regex pattern for the version format vX.Y.Z
-	versionRegex := `^\d+\.\d+\.\d+$`
+	// Define the regex pattern for semantic versioning
+	versionRegex := `^v?([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`
 	matched, err := regexp.MatchString(versionRegex, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate version: %w", err)
 	}
 
 	if !matched {
-		return nil, errors.New("invalid version format. Expected format: X.Y.Z (e.g., 1.0.0)")
+		return nil, errors.New("invalid version format. Expected semantic versioning format: X.Y.Z[-pre-release][+build-metadata] (e.g., 1.0.0, v1.2.3-alpha.1)")
 	}
 
 	cli.AddCommand(command.VersionCommand(version))
@@ -128,11 +112,41 @@ func (cli *Cli) Run(interactiveMode bool) {
 				break
 			}
 			line.SaveHistory(input)
-			err := cli.commander.Run(strings.Split(strings.TrimSpace(strings.TrimSuffix(input, "\n")), " "))
+			trimmedInput := strings.TrimSpace(strings.TrimSuffix(input, "\n"))
+			if trimmedInput == "" {
+				continue
+			}
+			err := cli.commander.Run(parseLine(trimmedInput))
 			if err != nil {
 				cli.commander.Write(err.Display())
 			}
 			cli.commander.Write("\n")
 		}
 	}
+}
+
+// parseLine splits a string by spaces, respecting quoted sections.
+func parseLine(line string) []string {
+	var args []string
+	var currentArg strings.Builder
+	inQuote := false
+	for _, r := range line {
+		switch r {
+		case '"':
+			inQuote = !inQuote
+		case ' ':
+			if inQuote {
+				currentArg.WriteRune(r)
+			} else if currentArg.Len() > 0 {
+				args = append(args, currentArg.String())
+				currentArg.Reset()
+			}
+		default:
+			currentArg.WriteRune(r)
+		}
+	}
+	if currentArg.Len() > 0 {
+		args = append(args, currentArg.String())
+	}
+	return args
 }

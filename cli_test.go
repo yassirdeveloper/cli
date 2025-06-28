@@ -61,7 +61,7 @@ func TestSetVersion_Invalid(t *testing.T) {
 	cli, err := NewCli("test-cli", "0.0.0")
 	assert.NoError(t, err, "No error should occur for valid cli")
 
-	invalidVersion := "v1.2.3"
+	invalidVersion := "v1.2.t"
 	_, err = cli.SetVersion(invalidVersion)
 
 	assert.Error(t, err, "Error should occur for invalid version format")
